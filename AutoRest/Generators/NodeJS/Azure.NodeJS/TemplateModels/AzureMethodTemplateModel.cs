@@ -12,7 +12,13 @@ namespace Microsoft.Rest.Generator.Azure.NodeJS
         public AzureMethodTemplateModel(Method source, ServiceClient serviceClient)
             : base(source, serviceClient)
         {
+            this.ClientRequestIdString = AzureCodeGenerator.GetClientRequestIdString(source);
+            this.RequestIdString = AzureCodeGenerator.GetRequestIdString(source);
         }
+        
+        public string ClientRequestIdString { get; private set; }
+
+        public string RequestIdString { get; private set; }
 
         /// <summary>
         /// Returns true if method has x-ms-long-running-operation extension.
@@ -31,22 +37,18 @@ namespace Microsoft.Rest.Generator.Azure.NodeJS
             return base.HasQueryParameters() || !IsAbsoluteUrl;
         }
 
-        /// <summary>
-        /// Gets the expression for response body initialization 
-        /// </summary>
-        public override string InitializeResponseBody
+
+        public override string InitializeResult
         {
             get
             {
-                //result.requestId = result.httpRequest.headers['x-ms-request-id'];
                 var sb = new IndentedStringBuilder();
                 if (this.HttpMethod == HttpMethod.Head &&
                     this.ReturnType != null)
                 {
-                    sb.AppendLine("result.body = (statusCode === 204);");
+                    sb.AppendLine("result = (statusCode === 204);");
                 }
-                sb.AppendLine("result.requestId = response.headers['x-ms-request-id'];")
-                    .AppendLine(base.InitializeResponseBody);
+
                 return sb.ToString();
             }
         }
@@ -59,9 +61,29 @@ namespace Microsoft.Rest.Generator.Azure.NodeJS
             get
             {
                 var sb = new IndentedStringBuilder();
-                sb.AppendLine("httpRequest.headers['x-ms-client-request-id'] = msRestAzure.generateUuid();")
+                sb.AppendLine("httpRequest.headers['{0}'] = msRestAzure.generateUuid();", this.ClientRequestIdString)
                   .AppendLine(base.SetDefaultHeaders);
                 return sb.ToString();
+            }
+        }
+
+        public string LongRunningOperationMethodNameInRuntime
+        {
+            get
+            {
+                string result = null;
+                if (this.IsLongRunningOperation)
+                {
+                    if (HttpMethod == HttpMethod.Post || HttpMethod == HttpMethod.Delete)
+                    {
+                        result = "getPostOrDeleteOperationResult";
+                    }
+                    else if (HttpMethod == HttpMethod.Put || HttpMethod == HttpMethod.Patch)
+                    {
+                        result = "getPutOrPatchOperationResult";
+                    }
+                }
+                return result;
             }
         }
     }

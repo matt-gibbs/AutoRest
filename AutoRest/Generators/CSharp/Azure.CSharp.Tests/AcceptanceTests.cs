@@ -432,14 +432,11 @@ namespace Microsoft.Rest.Generator.CSharp.Azure.Tests
                     {
                         {"tag1", "value1"},
                         {"tag2", "value3"}
-                    },
-                    Pname = "Product1",
-                    FlattenedProductType = "Flat"
+                    }
                 });
                 resourceArray.Add(new FlattenedProduct
                 {
-                    Location = "Building 44",
-                    Pname = "Product2"
+                    Location = "Building 44"
                 });
 
                 client.PutArray(resourceArray);
@@ -668,6 +665,24 @@ namespace Microsoft.Rest.Generator.CSharp.Azure.Tests
                 var result2 = client.XMsClientRequestId.ParamGetWithHttpMessagesAsync(validClientId)
                     .ConfigureAwait(false).GetAwaiter().GetResult();
                 Assert.Equal("123", result2.RequestId);
+            }
+        }
+
+        [Fact]
+        public void CustomNamedRequestIdTest()
+        {
+            SwaggerSpecHelper.RunTests<AzureCSharpCodeGenerator>(
+                SwaggerPath("azure-special-properties.json"), ExpectedPath("AzureSpecials"));
+            
+            const string validSubscription = "1234-5678-9012-3456";
+            const string expectedRequestId = "9C4D50EE-2D56-4CD3-8152-34347DC9F2B0";
+
+            using (var client = new AutoRestAzureSpecialParametersTestClient(Fixture.Uri,
+                new TokenCredentials(validSubscription, Guid.NewGuid().ToString())))
+            {
+                AzureOperationResponse response = client.Header.CustomNamedRequestIdWithHttpMessagesAsync(expectedRequestId).Result;
+
+                Assert.Equal("123", response.RequestId);
             }
         }
     }
