@@ -36,14 +36,6 @@ describe('nodejs', function () {
         });
       });
 
-      it('should handle invalid enum value in a complex type', function (done) {
-        testClient.basicOperations.putValid({ 'id': 2, 'name': 'abc', color: 'Blue' }, function (error, result) {
-          should.exist(error);
-          error.message.should.match(/.*is not a valid value.*/ig);
-          done();
-        });
-      });
-
       it('should get null basic type properties', function (done) {
         testClient.basicOperations.getNull(function (error, result) {
           should.not.exist(error);
@@ -177,6 +169,7 @@ describe('nodejs', function () {
           });
         });
       });
+
       it('should get and put valid date-time-rfc1123 properties', function (done) {
         var timeStringOne = 'Mon, 01 Jan 0001 00:00:00 GMT';
         var timeStringTwo = 'Mon, 18 May 2015 11:38:00 GMT';
@@ -194,6 +187,20 @@ describe('nodejs', function () {
           });
         });
       });
+
+      it('should get and put valid duration properties', function (done) {
+        var durationString = 'P123DT22H14M12.011S';
+        testClient.primitive.getDuration(function (error, result) {
+          should.not.exist(error);
+          //should.not.exist(result.field);
+          assert.deepEqual(result.field, moment.duration(durationString));
+          testClient.primitive.putDuration({ 'field': moment.duration(durationString) }, function (error, result) {
+            should.not.exist(error);
+            done();
+          });
+        });
+      });
+
       it('should get and put valid byte properties', function (done) {
         var byteBuffer = new Buffer([255, 254, 253, 252, 0, 250, 249, 248, 247, 246]);
         testClient.primitive.getByte(function (error, result) {
