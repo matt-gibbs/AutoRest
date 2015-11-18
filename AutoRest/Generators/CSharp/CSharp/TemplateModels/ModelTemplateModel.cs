@@ -44,8 +44,7 @@ namespace Microsoft.Rest.Generator.CSharp
         {
             get
             {
-                return (!string.IsNullOrEmpty(PolymorphicDiscriminator) && Name != SerializedName) ||
-                       (_baseModel != null && _baseModel.NeedsPolymorphicConverter);
+                return this.IsPolymorphicType && Name != SerializedName;
             }
         }
 
@@ -66,10 +65,34 @@ namespace Microsoft.Rest.Generator.CSharp
             }
         }
 
+        public virtual string ExceptionTypeDefinitionName
+        {
+            get
+            {
+                if (this.Extensions.ContainsKey(Microsoft.Rest.Generator.Extensions.NameOverrideExtension))
+                {
+                    var ext = this.Extensions[Microsoft.Rest.Generator.Extensions.NameOverrideExtension] as Newtonsoft.Json.Linq.JContainer;
+                    if (ext != null && ext["name"] != null)
+                    {
+                        return ext["name"].ToString();
+                    }
+                }
+                return this.Name + "Exception";
+            }
+        }
 
         public virtual IEnumerable<string> Usings
         {
             get { return Enumerable.Empty<string>(); }
+        }
+
+        private bool IsPolymorphicType
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(PolymorphicDiscriminator) ||
+                    (_baseModel != null && _baseModel.IsPolymorphicType);
+            }
         }
     }
 }

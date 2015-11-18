@@ -23,8 +23,8 @@ namespace Microsoft.Rest.Generator.Java.Azure
                 throw new ArgumentNullException("source");
             }
 
-            this.ClientRequestIdString = AzureCodeGenerator.GetClientRequestIdString(source);
-            this.RequestIdString = AzureCodeGenerator.GetRequestIdString(source);
+            this.ClientRequestIdString = AzureExtensions.GetClientRequestIdString(source);
+            this.RequestIdString = AzureExtensions.GetRequestIdString(source);
         }
 
         public string ClientRequestIdString { get; private set; }
@@ -54,7 +54,7 @@ namespace Microsoft.Rest.Generator.Java.Azure
         /// </summary>
         public bool IsLongRunningOperation
         {
-            get { return Extensions.ContainsKey(AzureCodeGenerator.LongRunningExtension); }
+            get { return Extensions.ContainsKey(AzureExtensions.LongRunningExtension); }
         }
 
         public bool IsPagingNextOperation
@@ -120,6 +120,15 @@ namespace Microsoft.Rest.Generator.Java.Azure
                 throw new InvalidOperationException("Invalid long running operation HTTP method " + this.HttpMethod);
             }
         }
+
+        public override string ResponseBuilder
+        {
+            get
+            {
+                return "AzureServiceResponseBuilder";
+            }
+        }
+
         public override string ServiceResponseBuilderArgs
         {
             get
@@ -155,12 +164,14 @@ namespace Microsoft.Rest.Generator.Java.Azure
                 {
                     imports.Remove("com.microsoft.rest.ServiceResponseEmptyCallback");
                     imports.Remove("com.microsoft.rest.ServiceResponseCallback");
-                    imports.Remove("com.microsoft.rest.ServiceResponseBuilder");
+                    imports.Remove("com.microsoft.rest.AzureServiceResponseBuilder");
                     imports.Add("retrofit.Callback");
                     this.Responses.Select(r => r.Value).Concat(new IType[]{ DefaultResponse })
                         .SelectMany(t => t.ImportFrom(ServiceClient.Namespace))
                         .Where(i => !this.Parameters.Any(p => p.Type.ImportFrom(ServiceClient.Namespace).Contains(i)))
                         .ForEach(i => imports.Remove(i));
+                    // return type may have been removed as a side effect
+                    imports.AddRange(this.ReturnType.ImportFrom(ServiceClient.Namespace));
                 }
                 else
                 {
